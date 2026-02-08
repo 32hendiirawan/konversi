@@ -14,7 +14,6 @@ body {
     display: flex; 
     flex-direction: column; 
     align-items: center;
-    justify-content: center;
     min-height: 100vh; 
     margin: 0; 
     background: linear-gradient(135deg, blue, skyblue, blue);
@@ -154,4 +153,5 @@ select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc;
 .history-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
 .correct { color: var(--success); font-weight: bold; }
 .wrong { color: var(--danger); font-weight: bold; }
+
 
