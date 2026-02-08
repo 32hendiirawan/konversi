@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Quiz Online</title>
+        <link rel="stylesheet" href="../css/style.css">
+
+    <style>
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            display: block;
+        }
+
+        .main-content {
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            background: white;
+            position: relative;
+        }
+
+        iframe {
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            border: none;
+            display: block;
+        }
+
+        /* --- 6. RESPONSIF (UNTUK HP/TABLET) --- */
+        @media (max-width: 768px) {
+            .menu-btn { display: block; } /* Munculkan tombol menu */
+        }            
+    </style>
+</head>
+
+<body>
+    <iframe id="quizFrame" name="quizFrame"></iframe>
+    <script>
+        // Fungsi untuk mengganti isi iframe
+        function loadQuiz(url) {
+            document.getElementById('quizFrame').src = url;
+        }
+
+        // Load kuis pertama secara otomatis saat web dibuka
+        loadQuiz('html/konversi.html');
+    </script>
+
+</body>
+</html>
