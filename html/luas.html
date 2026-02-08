@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css">
+    <title>EduLuas - Konversi Satuan Luas</title>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-tabs">
+        <a class="tab-btn" href="konversi.html" style="text-decoration: none;">🏠 Home</a>
+        <button class="tab-btn active" onclick="openTab('belajar')">Materi</button>
+        <button class="tab-btn" onclick="openTab('konverter')">Alat</button>
+        <button class="tab-btn" onclick="openTab('latihan')">Latihan</button>
+    </div>
+
+    <div class="content">
+        <div id="belajar" class="tab-content active">
+            <img src="../png/luas.png" alt="Tangga Satuan Metrik" style="width:100%; margin-bottom:10px;">
+        </div>        
+        <div id="konverter" class="tab-content">
+            <h3 style="text-align:center; color: var(--primary)">Kalkulator Luas</h3>
+            <input type="text" id="conv-val" class="input-box active" readonly placeholder="0">
+            <div style="display:flex; gap:10px;">
+                <select id="cFrom" onchange="doConv()"></select>
+                <select id="cTo" onchange="doConv()"></select>
+            </div>
+            <div id="cRes" style="text-align:center; font-size:1.5rem; font-weight:bold; margin: 20px 0;">Hasil: -</div>
+            <div id="numpad-conv" class="numpad"></div>
+        </div>
+
+        <div id="latihan" class="tab-content">
+            <div id="quiz-box">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span id="q-idx">Soal 1/10</span>
+                    <span id="q-score">Skor: 0</span>
+                </div>
+                <div id="q-text" style="font-size:1.3rem; text-align:center; margin:20px 0; font-weight:bold; color:var(--primary);"></div>
+                <input type="text" id="ans-f" class="input-box" readonly placeholder="Jawaban">
+                <div id="numpad-quiz" class="numpad"></div>
+            </div>
+            <div id="quiz-end" style="display:none; text-align:center;">
+                <h3>Selesai! Skor: <span id="final-score"></span></h3>
+                <div id="history-list" style="max-height:250px; overflow-y:auto; text-align:left; background:#f9f9f9; padding:10px; border-radius:10px;"></div>
+                <button class="num-btn btn-green" style="margin-top:10px;" onclick="location.reload()">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const units = [
+        {n:'km²', v:1e12}, {n:'hm²', v:1e10}, {n:'dam²', v:1e8}, 
+        {n:'m²', v:1e6}, {n:'dm²', v:1e4}, {n:'cm²', v:100}, {n:'mm²', v:1}
+    ];
+    let curQ = 0, score = 0, qData = {}, historyData = [], activeInput = 'conv-val';
+
+    function openTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        activeInput = (id === 'konverter') ? 'conv-val' : 'ans-f';
+    }
+
+    // Init Select
+    const sf = document.getElementById('cFrom'), st = document.getElementById('cTo');
+    units.forEach((u, i) => { sf.add(new Option(u.n, i)); st.add(new Option(u.n, i)); });
+    st.selectedIndex = 3;
+
+    function doConv() {
+        const val = parseFloat(document.getElementById('conv-val').value);
+        if(isNaN(val)) return;
+        const fromIdx = sf.value, toIdx = st.value;
+        const diff = toIdx - fromIdx;
+        const res = val * Math.pow(100, diff);
+        document.getElementById('cRes').innerText = res.toLocaleString('id-ID') + " " + units[toIdx].n;
+    }
+
+    function genQ() {
+        if(curQ >= 10) return showEnd();
+        curQ++;
+        document.getElementById('q-idx').innerText = `Soal ${curQ}/10`;
+        document.getElementById('ans-f').value = '';
+        
+        let fromIdx = Math.floor(Math.random() * 7);
+        let toIdx = Math.floor(Math.random() * 7);
+        while(fromIdx === toIdx || Math.abs(fromIdx - toIdx) > 3) toIdx = Math.floor(Math.random() * 7);
+
+        let val;
+        if(fromIdx < toIdx) { // Turun tangga (kali)
+            val = Math.floor(Math.random() * 50) + 1;
+        } else { // Naik tangga (bagi) - Mencegah pecahan
+            let lompatan = fromIdx - toIdx;
+            let pengali = Math.pow(100, lompatan);
+            val = (Math.floor(Math.random() * 10) + 1) * pengali;
+        }
+
+        const target = val * Math.pow(100, toIdx - fromIdx);
+        qData = { text: `${val.toLocaleString('id-ID')} ${units[fromIdx].n} = ... ${units[toIdx].n}`, target: target };
+        document.getElementById('q-text').innerText = qData.text;
+    }
+
+    function showEnd() {
+        document.getElementById('quiz-box').style.display = 'none';
+        document.getElementById('quiz-end').style.display = 'block';
+        document.getElementById('final-score').innerText = score * 10;
+        document.getElementById('history-list').innerHTML = historyData.map(h => `
+            <div class="history-item">${h.q} <b>${h.ok ? '✅' : '❌ Kunci: '+h.t}</b></div>
+        `).join('');
+    }
+
+    function renderNumpad(id, isQuiz) {
+        const container = document.getElementById(id);
+        ['1','2','3','4','5','6','7','8','9','.','0','DEL'].forEach(k => {
+            const b = document.createElement('button');
+            b.className = 'num-btn' + (k==='DEL'?' btn-red':'');
+            b.innerText = k==='DEL'?'⌫':k;
+            b.onclick = () => {
+                const inp = document.getElementById(activeInput);
+                if(k==='DEL') inp.value = inp.value.slice(0,-1);
+                else inp.value += k;
+                if(activeInput === 'conv-val') doConv();
+            };
+            container.appendChild(b);
+        });
+        if(isQuiz) {
+            const sub = document.createElement('button');
+            sub.className = 'num-btn btn-green';
+            sub.innerText = 'JAWAB';
+            sub.onclick = () => {
+                const ans = parseFloat(document.getElementById('ans-f').value);
+                const ok = ans === qData.target;
+                if(ok) score++;
+                historyData.push({q: qData.text, ok: ok, t: qData.target});
+                document.getElementById('q-score').innerText = `Skor: ${score*10}`;
+                genQ();
+            };
+            container.appendChild(sub);
+        }
+    }
+
+    renderNumpad('numpad-conv', false);
+    renderNumpad('numpad-quiz', true);
+    genQ();
+</script>
+</body>
+</html>

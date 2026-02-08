@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSatuan - Full Numpad Version</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-tabs">
+        <a class="tab-btn" href="konversi.html" style="text-decoration: none;">🏠 Home</a>
+        <button class="tab-btn active" onclick="openTab('belajar')">Materi</button>
+        <button class="tab-btn" onclick="openTab('konverter')">Alat</button>
+        <button class="tab-btn" onclick="openTab('latihan')">Latihan</button>
+    </div>
+
+    <div class="content">
+        <div id="belajar" class="tab-content active">
+            <img src="../png/panjang.png" alt="Tangga Satuan Metrik" style="width:100%; margin-bottom:10px;">
+        </div>
+
+        <div id="konverter" class="tab-content">
+            <h3>Kalkulator Konversi</h3>
+            <div class="helper-text">Input :</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; align-items:center; margin-bottom:10px;">
+                <input type="text" id="conv-val" class="input-box active" readonly onclick="setActiveInput('conv-val')" placeholder="0">
+                <select id="cFrom" onchange="doConv()"></select>
+            </div>
+            <div class="helper-text">Output :</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; align-items:center; justify-content: center; margin-bottom:10px;">
+                <div id="cRes" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; text-align:center; font-size:1.2rem; font-weight:bold; color:var(--primary);">0</div>
+                <select id="cTo" onchange="doConv()"></select>
+            </div>            
+            
+            <div id="numpad-conv" class="numpad"></div>
+        </div>
+
+        <div id="latihan" class="tab-content">
+            <div id="quiz-start" style="text-align:center; margin-top: 50px;">
+                <button class="num-btn" style="width:100%; margin-bottom:15px; border-left: 8px solid var(--primary);" onclick="initQuiz('easy')">LEVEL DASAR</button>
+                <button class="num-btn" style="width:100%; border-left: 8px solid #8b5cf6;" onclick="initQuiz('hard')">LEVEL LANJUTAN</button>
+            </div>
+
+            <div id="quiz-box" style="display:none;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span id="q-idx">Soal 1/10</span>
+                    <span id="q-score" style="color:var(--success);">Skor: 0</span>
+                </div>
+                <div id="q-text" style="font-size:1.2rem; text-align:center; margin-bottom:15px; font-weight:bold; color:var(--primary);"></div>
+                
+                <div id="quiz-inputs">
+                    <div style="display: flex; flex-direction: row;">
+                        <div id="step1-ui">
+                            <div class="helper-text" id="l-s1">Step 1</div>
+                            <input type="text" id="ans-s1" class="input-box" readonly onclick="setActiveInput('ans-s1')">
+                        </div>
+                        <div id="op"></div>
+                        <div id="step2-ui">
+                            <div class="helper-text" id="l-s2">Step 2</div>
+                            <input type="text" id="ans-s2" class="input-box" readonly onclick="setActiveInput('ans-s2')">
+                        </div>
+                    </div>
+                    <div class="helper-text">Hasil Akhir:</div>
+                    <input type="text" id="ans-f" class="input-box" readonly onclick="setActiveInput('ans-f')">
+                </div>
+
+                <div id="numpad-quiz" class="numpad"></div>
+            </div>
+
+            <div id="quiz-end" style="display:none;">
+                <h3 style="text-align:center;">Selesai! Skor: <span id="final-score"></span></h3>
+                <div id="history-list" style="max-height:300px; overflow-y:auto; border:1px solid #eee; border-radius:10px; margin-bottom:10px;"></div>
+                <button class="num-btn btn-green" style="width:100%" onclick="location.reload()">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const units = [
+        {n:'km', v:1000}, {n:'hm', v:100}, {n:'dam', v:10}, {n:'m', v:1},
+        {n:'dm', v:0.1}, {n:'cm', v:0.01}, {n:'mm', v:0.001}
+    ];
+
+    let activeInputId = 'conv-val';
+
+    function renderNumpad(containerId, isSubmit = false) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const keys = ['1','2','3','4','5','6','7','8','9','.', '0', 'DEL'];
+        keys.forEach(key => {
+            const btn = document.createElement('button');
+            btn.className = 'num-btn' + (key === 'DEL' ? ' btn-red' : '');
+            btn.innerText = key === 'DEL' ? '⌫' : key;
+            btn.onclick = () => handlePress(key);
+            container.appendChild(btn);
+        });
+        if(isSubmit) {
+            const sBtn = document.createElement('button');
+            sBtn.className = 'num-btn btn-green';
+            sBtn.innerText = 'JAWAB';
+            sBtn.onclick = () => submitAns();
+            container.appendChild(sBtn);
+        }
+    }
+
+    function handlePress(key) {
+        const input = document.getElementById(activeInputId);
+        if(key === 'DEL') input.value = input.value.slice(0, -1);
+        else if(key === '.' && input.value.includes('.')) return;
+        else input.value += key;
+        if(activeInputId === 'conv-val') doConv();
+    }
+
+    function setActiveInput(id) {
+        activeInputId = id;
+        document.querySelectorAll('.input-box').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function openTab(id) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        if(id === 'konverter') setActiveInput('conv-val');
+    }
+
+    const sf = document.getElementById('cFrom'), st = document.getElementById('cTo');
+    units.forEach(u => { sf.add(new Option(u.n, u.v)); st.add(new Option(u.n, u.v)); });
+    st.selectedIndex = 3;
+
+    function doConv() {
+        const v = parseFloat(document.getElementById('conv-val').value);
+        if(isNaN(v)) { document.getElementById('cRes').innerText = "0"; return; }
+        const res = (v * sf.value) / st.value;
+        document.getElementById('cRes').innerText = `${Number(res.toFixed(4))}`;
+    }
+
+    let curQ = 0, score = 0, quizLv = '', qData = {}, history = [];
+
+    function initQuiz(lv) {
+        quizLv = lv; curQ = 0; score = 0;
+        document.getElementById('quiz-start').style.display = 'none';
+        document.getElementById('quiz-box').style.display = 'block';
+        renderNumpad('numpad-quiz', true);
+        genQ();
+    }
+
+    function genQ() {
+        if(curQ >= 10) return showEnd();
+        curQ++;
+        document.getElementById('q-idx').innerText = `Soal ${curQ}/10`;
+        document.querySelectorAll('#quiz-box .input-box').forEach(i => i.value = '');
+        
+        // Tentukan Target Unit
+        let tIdx = Math.floor(Math.random() * 7);
+        let uT = units[tIdx];
+
+        // Fungsi Ambil Satuan yang Berbeda (Max 3 Tangga)
+        function getUniqueNear(excludeIdxs, targetIdx) {
+            let nIdx;
+            do {
+                let off = Math.floor(Math.random() * 7) - 3; // -3 s/d 3
+                nIdx = Math.max(0, Math.min(6, targetIdx + off));
+            } while (excludeIdxs.includes(nIdx));
+            return nIdx;
+        }
+
+        if(quizLv === 'easy') {
+            document.getElementById('step1-ui').style.display = 'none';
+            document.getElementById('step2-ui').style.display = 'none';
+            let sIdx = getUniqueNear([tIdx], tIdx);
+            let uS = units[sIdx];
+            
+            // Angka dibuat bulat (ratusan/ribuan) jika naik tangga agar desimal rapi
+            let val = (uS.v < uT.v) ? (Math.floor(Math.random()*9)+1)*100 : (Math.floor(Math.random()*20)+1);
+            
+            qData = { text: `${val} ${uS.n} = ... ${uT.n}`, target: Number(((val*uS.v)/uT.v).toFixed(1)) };
+            setActiveInput('ans-f');
+        } else {
+            document.getElementById('step1-ui').style.display = 'block';
+            document.getElementById('step2-ui').style.display = 'block';
+            
+            let s1Idx = getUniqueNear([tIdx], tIdx);
+            let s2Idx = getUniqueNear([tIdx, s1Idx], tIdx);
+            
+            let uS1 = units[s1Idx], uS2 = units[s2Idx];
+            
+            // Generate angka bulat agar hasil konversi .0 atau .5
+            let v1 = (uS1.v < uT.v) ? (Math.floor(Math.random()*9)+1)*100 : (Math.floor(Math.random()*15)+1);
+            let v2 = (uS2.v < uT.v) ? (Math.floor(Math.random()*9)+1)*100 : (Math.floor(Math.random()*15)+1);
+            
+            let op = Math.random() > 0.5 ? '+' : '-';
+            let s1Val = Number(((v1*uS1.v)/uT.v).toFixed(1));
+            let s2Val = Number(((v2*uS2.v)/uT.v).toFixed(1));
+            
+            if(op==='-' && s1Val < s2Val) { [v1,v2,uS1,uS2,s1Val,s2Val] = [v2,v1,uS2,uS1,s2Val,s1Val]; }
+            
+            qData = { 
+                text: `${v1} ${uS1.n} ${op} ${v2} ${uS2.n} = ... ${uT.n}`, 
+                s1: s1Val, s2: s2Val, 
+                target: Number((op==='+'?s1Val+s2Val:s1Val-s2Val).toFixed(1)) 
+            };
+            document.getElementById('l-s1').innerText = `${v1} ${uS1.n} \u2192 ${uT.n}`;
+            document.getElementById('l-s2').innerText = `${v2} ${uS2.n} \u2192 ${uT.n}`;
+            document.getElementById('op').innerText = op;
+            setActiveInput('ans-s1');
+        }
+        document.getElementById('q-text').innerText = qData.text;
+    }
+
+    function submitAns() {
+        let isOk = true;
+        const f = parseFloat(document.getElementById('ans-f').value);
+        if(isNaN(f) || Math.abs(f - qData.target) > 0.01) isOk = false;
+        if(quizLv === 'hard') {
+            const v1 = parseFloat(document.getElementById('ans-s1').value), v2 = parseFloat(document.getElementById('ans-s2').value);
+            if(isNaN(v1) || isNaN(v2) || Math.abs(v1-qData.s1)>0.01 || Math.abs(v2-qData.s2)>0.01) isOk = false;
+        }
+        if(isOk) score++;
+        history.push({ q: qData.text, ok: isOk, t: qData.target });
+        document.getElementById('q-score').innerText = `Skor: ${score*10}`;
+        genQ();
+    }
+
+    function showEnd() {
+        document.getElementById('quiz-box').style.display = 'none';
+        document.getElementById('quiz-end').style.display = 'block';
+        document.getElementById('final-score').innerText = score * 10;
+        document.getElementById('history-list').innerHTML = history.map(h => `
+            <div class="history-item">
+                <b>${h.q}</b> <span class="${h.ok?'correct':'wrong'}">${h.ok?'(Benar)':'(Kunci: '+h.t+')'}</span>
+            </div>
+        `).join('');
+    }
+    renderNumpad('numpad-conv');
+</script>
+</body>
+</html>
